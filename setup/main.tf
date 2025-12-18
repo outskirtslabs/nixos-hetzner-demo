@@ -59,23 +59,26 @@ resource "hcloud_server" "demo" {
 
   firewall_ids = [hcloud_firewall.demo.id]
 
-  # User data script runs on first boot
-  # Authenticates with FlakeHub and applies the NixOS configuration
-  user_data = <<-USERDATA
-#!/bin/sh
-set -e
-
-# Wait for network
-sleep 5
-
-# Login to FlakeHub using token authentication
-echo '${var.flakehub_token}' | determinate-nixd login token
-
-# Apply the NixOS configuration from FlakeHub
-fh apply nixos ${var.flake_reference}
-USERDATA
-
   labels = {
     purpose = "flakehub-demo"
+  }
+}
+
+# Provision the server via SSH (NixOS doesn't have cloud-init by default)
+resource "null_resource" "provision" {
+  depends_on = [hcloud_server.demo]
+
+  connection {
+    type        = "ssh"
+    user        = "root"
+    private_key = var.deploy_ssh_private_key
+    host        = hcloud_server.demo.ipv4_address
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo '${var.flakehub_token}' | determinate-nixd login token",
+      "fh apply nixos ${var.flake_reference}"
+    ]
   }
 }

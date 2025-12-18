@@ -9,11 +9,19 @@
 # flakehub_token = "your-flakehub-token"
 
 # FlakeHub flake reference
-flake_reference = "outskirtslabs/nixos-hetzner-demo/0.1#nixosConfigurations.ethercalc-demo"
+flake_reference = "outskirtslabs/nixos-hetzner-demo/0.1#nixosConfigurations.cryptpad-demo"
 
 # SSH public key for GitHub Actions deployment (required)
 # Generate with: ssh-keygen -t ed25519 -C "github-actions-deploy" -f deploy_key -N ""
 # deploy_ssh_public_key = "ssh-ed25519 AAAA..."
+
+# SSH private key for Terraform provisioning (required for first boot)
+# Contents of the deploy_key file (private key)
+# deploy_ssh_private_key = <<-EOT
+#   -----BEGIN OPENSSH PRIVATE KEY-----
+#   ...
+#   -----END OPENSSH PRIVATE KEY-----
+# EOT
 
 # Optional: SSH public key for manual access
 # ssh_public_key = "ssh-ed25519 AAAA..."

@@ -20,6 +20,12 @@ variable "deploy_ssh_public_key" {
   description = "SSH public key for GitHub Actions deployment"
 }
 
+variable "deploy_ssh_private_key" {
+  type        = string
+  sensitive   = true
+  description = "SSH private key for Terraform provisioning (contents of deploy_key file)"
+}
+
 variable "flake_reference" {
   type        = string
   description = "FlakeHub flake reference (e.g., outskirtslabs/nixos-hetzner-demo/0.1)"

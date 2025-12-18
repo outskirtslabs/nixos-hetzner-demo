@@ -42,7 +42,7 @@ echo "==> Building disk image for $ARCH from github:outskirtslabs/nixos-hetzner.
 cd "$PROJECT_ROOT"
 nix build "github:outskirtslabs/nixos-hetzner#diskImages.$ARCH.hetzner" --print-build-logs
 
-IMAGE_PATH=$(find result -name '*.raw' -o -name '*.img' | head -1)
+IMAGE_PATH=$(ls result/*.raw result/*.img 2>/dev/null | head -1)
 if [[ -z "$IMAGE_PATH" ]]; then
   echo "Error: Could not find built image in result/"
   exit 1
@@ -125,7 +125,7 @@ hcloud_image_id = $image_id
 # flakehub_token = "your-flakehub-token"
 # deploy_ssh_public_key = "ssh-ed25519 AAAA..."
 
-flake_reference = "outskirtslabs/nixos-hetzner-demo/0.1#nixosConfigurations.ethercalc-demo"
+flake_reference = "outskirtslabs/nixos-hetzner-demo/0.1#nixosConfigurations.cryptpad-demo"
 server_type = "cx22"
 location = "fsn1"
 EOF

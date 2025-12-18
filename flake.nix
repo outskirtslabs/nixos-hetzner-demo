@@ -1,83 +1,87 @@
 {
-  # TODO: switch this back to nixos/nixpkgs once https://github.com/NixOS/nixpkgs/pull/375551 is merged
-  inputs.nixpkgs.url = "git+https://github.com/ramblurr/nixpkgs?shallow=1&ref=consolidated";
-  inputs.nixos-hetzner.url = "github:outskirtslabs/nixos-hetzner";
-  inputs.nixos-hetzner.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/=0.1.95";
-  inputs.fh.url = "https://flakehub.com/f/DeterminateSystems/fh/=0.1.16";
+  inputs = {
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # tracks nixpkgs unstable branch
+    # TODO: switch this back to nixos/nixpkgs once https://github.com/NixOS/nixpkgs/pull/375551 is merged
+    nixpkgs-mine.url = "git+https://github.com/ramblurr/nixpkgs?shallow=1&ref=consolidated";
+
+    flakelight.url = "github:nix-community/flakelight";
+    flakelight.inputs.nixpkgs.follows = "nixpkgs";
+
+    nixos-hetzner.url = "https://flakehub.com/f/outskirtslabs/nixos-hetzner/*";
+    nixos-hetzner.inputs.nixpkgs.follows = "nixpkgs";
+
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/*";
+    fh.url = "https://flakehub.com/f/DeterminateSystems/fh/0.1.*";
+  };
 
   outputs =
-    inputs:
-    let
-      supportedSystems = [
+    { flakelight, ... }@inputs:
+    flakelight ./. {
+      inherit inputs;
+
+      systems = [
         "x86_64-linux"
         "aarch64-linux"
       ];
 
-      forAllSystems = f: inputs.nixpkgs.lib.genAttrs supportedSystems (system: (forSystem system f));
+      devShell.packages =
+        pkgs: with pkgs; [
+          opentofu
+          inputs.nixpkgs-mine.legacyPackages.${pkgs.system}.hcloud
+          inputs.nixpkgs-mine.legacyPackages.${pkgs.system}.hcloud-upload-image
+          inputs.nixos-hetzner.packages.${pkgs.system}.hcloud-smoke-test
+          jq
+        ];
 
-      forSystem =
-        system: f:
-        f rec {
-          inherit system;
-          pkgs = import inputs.nixpkgs {
-            inherit system;
-          };
-          lib = pkgs.lib;
-        };
-    in
-    {
-      nixosConfigurations.ethercalc-demo = inputs.nixpkgs.lib.nixosSystem {
+      nixosConfigurations.cryptpad-demo = {
         system = "x86_64-linux";
         modules = [
-          "${inputs.nixpkgs}/nixos/modules/virtualisation/hcloud-config.nix"
           inputs.determinate.nixosModules.default
+          "${inputs.nixpkgs-mine}/nixos/modules/virtualisation/hcloud-config.nix"
+          # Overlay to add hcloud packages from nixpkgs-mine (pending upstream PR #375551)
+          {
+            nixpkgs.overlays = [
+              (final: prev: {
+                hcloud = inputs.nixpkgs-mine.legacyPackages.${prev.system}.hcloud;
+                hcloud-upload-image = inputs.nixpkgs-mine.legacyPackages.${prev.system}.hcloud-upload-image;
+                systemd-network-generator-hcloud =
+                  inputs.nixpkgs-mine.legacyPackages.${prev.system}.systemd-network-generator-hcloud;
+              })
+            ];
+          }
           (
             { pkgs, ... }:
             {
+
               environment.systemPackages = [
-                inputs.fh.packages."${pkgs.stdenv.system}".default
+                inputs.fh.packages.${pkgs.system}.default
               ];
-            }
-          )
-          (
-            { pkgs, ... }:
-            {
-              # Enable SSH for deployment
+
               services.openssh.enable = true;
               services.openssh.settings.PermitRootLogin = "prohibit-password";
 
-              networking.firewall.allowedTCPPorts = [ 22 80 ];
-              systemd.services.ethercalc.serviceConfig.AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
-              services.ethercalc = {
+              networking.firewall.allowedTCPPorts = [
+                22
+                80
+              ];
+
+              services.cryptpad = {
                 enable = true;
-                port = 80;
+                settings = {
+                  httpUnsafeOrigin = "http://localhost";
+                  httpSafeOrigin = "http://localhost";
+                  httpAddress = "0.0.0.0";
+                  httpPort = 80;
+                };
               };
 
-              services.writefreely = {
-                enable = false;
-                host = "0.0.0.0";
-                settings.server.bind = "0.0.0.0";
-              };
+              # cryptpad needs CAP_NET_BIND_SERVICE to bind to port 80
+              systemd.services.cryptpad.serviceConfig.AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
+
+              system.stateVersion = "25.11";
             }
           )
         ];
       };
-
-      devShells = forAllSystems (
-        { system, pkgs, ... }:
-        {
-          default = pkgs.mkShell {
-            name = "demo-shell";
-            buildInputs = with pkgs; [
-              opentofu
-              hcloud
-              hcloud-upload-image
-              inputs.nixos-hetzner.packages."${pkgs.stdenv.system}".hcloud-smoke-test
-              jq
-            ];
-          };
-        }
-      );
     };
 }

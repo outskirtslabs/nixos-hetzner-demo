@@ -9,7 +9,8 @@ on:
       - v?[0-9]+.[0-9]+.[0-9]+*
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group:
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -26,7 +27,9 @@ jobs:
       - uses: DeterminateSystems/flakehub-cache-action@main
 
       - name: Build NixOS closure
-        run: nix build .#nixosConfigurations.ethercalc-demo.config.system.build.toplevel
+        run:
+          nix build
+          .#nixosConfigurations.cryptpad-demo.config.system.build.toplevel
 
       - uses: DeterminateSystems/flakehub-push@main
         if: ${{ github.event_name != 'pull_request' }}
@@ -53,4 +56,4 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new root@"$SERVER_IP" \
-            "fh apply nixos ${FLAKEREF}#nixosConfigurations.ethercalc-demo"
+            "fh apply nixos ${FLAKEREF}#nixosConfigurations.cryptpad-demo"

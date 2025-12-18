@@ -4,3 +4,9 @@
 tmp/
 extra/
 .direnv
+result
+deploy_key*
+.env
+.terraform/
+.terraform.lock.hcl
+*.tfvars
