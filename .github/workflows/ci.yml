@@ -37,7 +37,7 @@ jobs:
         with:
           name: outskirtslabs/nixos-hetzner-demo
           rolling: true
-          visibility: private
+          visibility: public
           include-output-paths: true
 
   deploy:
