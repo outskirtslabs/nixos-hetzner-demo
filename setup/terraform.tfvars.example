@@ -1,0 +1,23 @@
+# Hetzner Cloud API token (get from Hetzner Cloud Console)
+# hcloud_token = "your-hcloud-token"
+
+# Image ID from upload-image.sh output
+# hcloud_image_id = 123456789
+
+# FlakeHub token for determinate-nixd authentication
+# Get from https://flakehub.com/settings/tokens
+# flakehub_token = "your-flakehub-token"
+
+# FlakeHub flake reference
+flake_reference = "outskirtslabs/nixos-hetzner-demo/0.1#nixosConfigurations.ethercalc-demo"
+
+# SSH public key for GitHub Actions deployment (required)
+# Generate with: ssh-keygen -t ed25519 -C "github-actions-deploy" -f deploy_key -N ""
+# deploy_ssh_public_key = "ssh-ed25519 AAAA..."
+
+# Optional: SSH public key for manual access
+# ssh_public_key = "ssh-ed25519 AAAA..."
+
+# Server configuration
+server_type = "cx22"  # or "cax11" for ARM
+location    = "fsn1"  # Falkenstein, Germany (other options: nbg1, hel1, ash, hil)
