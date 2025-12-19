@@ -77,7 +77,9 @@ resource "null_resource" "provision" {
 
   provisioner "remote-exec" {
     inline = [
-      "echo '${var.flakehub_token}' | determinate-nixd login token",
+      "echo '${var.flakehub_token}' > /tmp/fh-token",
+      "determinate-nixd login token --token-file /tmp/fh-token",
+      "rm /tmp/fh-token",
       "fh apply nixos ${var.flake_reference}"
     ]
   }
