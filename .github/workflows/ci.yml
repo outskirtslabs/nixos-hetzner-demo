@@ -41,7 +41,7 @@ jobs:
           include-output-paths: true
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'no-deploy')
     needs: build-publish
     runs-on: ubuntu-latest
     steps:
