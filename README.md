@@ -15,7 +15,7 @@ This repo is a port of the [Determinate Systems AWS demo][detsys-demo] to
 Hetzner Cloud. Key differences:
 
 | Aspect            | AWS Demo                                | Hetzner Demo                                         |
-| ----------------- | --------------------------------------- | ---------------------------------------------------- |
+|-------------------|-----------------------------------------|------------------------------------------------------|
 | Demo app          | EtherCalc (removed from nixpkgs)        | CryptPad                                             |
 | Base image        | Pre-built AMIs from Determinate Systems | Custom image built from [nixos-hetzner] and uploaded |
 | FlakeHub auth     | IAM role (`determinate-nixd login aws`) | API token (`determinate-nixd login token`)           |
@@ -26,6 +26,19 @@ Hetzner Cloud. Key differences:
 The core FlakeHub workflow remains the same: build closures in CI, publish to
 FlakeHub Cache, and apply pre-built configurations in seconds.
 
+However there are a few caveats:
+
+Since Hetzner Cloud does not have a public marketplace for cloud images, you have to build the cloud image yourself (with the help of [nixos-hetzner]) and upload it. Hetzner Cloud API keys are scoped to a project, so you will need to upload the image on a per-project basis.
+
+We rely on the tool [hcloud-upload-image] to perform the image creation. It can take awhile. In my experience uploading a 4GB image can take 8-12 minutes (assuming a fast pipe and bandwidth is not the bottleneck).
+
+If you build the image on a system using FlakeHub Cache, then the cloud image will be available to other systems from which you want to deploy (that are also using FlakeHub Cache).
+
+Once you have a NixOS image uploaded to HCloud, it is straightforward to create a nixos server from the snapshot. You can clickops at console.hetzner.com, use the hcloud cli tool, or use terraform/opentofu.
+
+In this demo we use opentofu to provision the server, firewall, ssh key, etc.
+
+- The initial HCloud image upload takes 8-12 minutes
 - The initial deployment completes in less than XX seconds
 - Subsequent deployments take less than XX seconds
 
@@ -44,7 +57,7 @@ deployment techniques.
 
 - Paid [Hetzner Cloud account][hetzner] with an API token
 - Paid [FlakeHub account][flakehub] with an API token
-- [Detsys Nix] with flakes enabled
+- [Detsys Nix][detnix] with flakes enabled
 - [OpenTofu] (available in the dev shell)
 
 ## Getting Started
@@ -74,10 +87,15 @@ be done once (or when you want to update the base image).
 # Enter the dev shell
 nix develop
 
-# Set your Hetzner Cloud token
-export HCLOUD_TOKEN="your-token-here"
+# Create .env file with your tokens (keeps them out of shell history)
+cat > .env << 'EOF'
+HCLOUD_TOKEN=your-hetzner-token
+FLAKEHUB_TOKEN=your-flakehub-token
+EOF
+chmod 600 .env
 
-# Build and upload the image
+# Load and export tokens, then build/upload the image
+set -a && source .env && set +a
 ./scripts/upload-image.sh
 
 # Note the image ID from the output (e.g., 123456789)
@@ -126,17 +144,19 @@ export CRYPTPAD_URL=$(tofu output --json | jq -r .website.value)
 # Open the website (wait ~60 seconds for first deployment)
 open "${CRYPTPAD_URL}"
 
-# When you're done, destroy the resources
+# (optional) When you're done, destroy the resources
 tofu destroy -auto-approve
 ```
 
 ### Automated deployment with GitHub Actions
 
-To enable automatic deployments via [GitHub Actions][actions], configure the
-following repository secrets:
+Once the server exists, GitHub Actions can automatically deploy NixOS
+configuration changes. Configure the following repository secrets:
 
-- `DEPLOY_SSH_PRIVATE_KEY`: The contents of the `deploy_key` file (private key)
-- `HETZNER_SERVER_IP`: The server IP from `tofu output server_ip`
+| Secret                   | Description                                         |
+|--------------------------|-----------------------------------------------------|
+| `DEPLOY_SSH_PRIVATE_KEY` | The contents of the `deploy_key` file (private key) |
+| `HETZNER_SERVER_IP`      | The server IP from `tofu output server_ip`          |
 
 Using the `gh` CLI after completing [manual deployment](#manual-deployment):
 
@@ -239,13 +259,6 @@ In summary, applying a fully evaluated NixOS closure from [FlakeHub] ensures
 that the exact same configuration is deployed every time, as the closure is a
 fixed, immutable artifact.
 
-## GitHub Secrets Required
-
-| Secret                   | Description                            |
-| ------------------------ | -------------------------------------- |
-| `DEPLOY_SSH_PRIVATE_KEY` | Ed25519 private key for SSH deployment |
-| `HETZNER_SERVER_IP`      | Public IP of the Hetzner server        |
-
 [actions]: https://github.com/features/actions
 [closures]: https://zero-to-nix.com/concepts/closures
 [detsys]: https://determinate.systems
@@ -259,3 +272,5 @@ fixed, immutable artifact.
 [nixos]: https://zero-to-nix.com/concepts/nixos
 [nixos-hetzner]: https://github.com/outskirtslabs/nixos-hetzner
 [opentofu]: https://opentofu.org
+[det-nix]: https://docs.determinate.systems/determinate-nix
+[hcloud-upload-image]: https://github.com/apricote/hcloud-upload-image
