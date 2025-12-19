@@ -183,14 +183,41 @@ to main.
 
 ## How it works
 
+Here's a high level walkthrough of what's going on
+
+Initial setup (one-time)
+
+1. Build NixOS base image locally using [nixos-hetzner]
+2. Upload image to Hetzner Cloud via hcloud-upload-image
+3. Generate SSH deploy key for GitHub Actions
+4. Configure terraform.tfvars with tokens, image ID, and keys
+
+First deployment (tofu apply)
+
+1. OpenTofu creates Hetzner resources (SSH key, firewall, server)
+2. Server boots with base NixOS image (includes determinate-nixd and fh)
+3. Provisioner SSHs into server
+4. Authenticates with FlakeHub using `determinate-nixd login token`
+5. Runs `fh apply nixos <flakeref>` to pull config from FlakeHub
+6. Server downloads pre-built closure and switches to new configuration
+
+Subsequent deployments (via GitHub Actions)
+
+1. Developer pushes changes to flake.nix
+2. CI builds the NixOS closure
+3. flakehub-push publishes closure to FlakeHub (with output paths cached)
+4. Deploy job SSHs to server with the exact flakeref
+5. Server runs `fh apply nixos` - downloads closure from FlakeHub Cache
+6. Configuration applied in seconds (no building on server)
+
 ### Nix flake
 
 The [`flake.nix`](./flake.nix) defines the NixOS configuration for the demo
 system:
 
 - Inputs:
-  - `nixpkgs`: Custom nixpkgs fork with Hetzner Cloud tools
-  - `nixos-hetzner`: Hetzner Cloud image building tools
+  - `nixpkgs`: Custom nixpkgs fork with Hetzner Cloud tools (can be reverted to upstream nixpkgs once [PR #375551](https://github.com/NixOS/nixpkgs/pull/375551) is merged
+  - [`nixos-hetzner`][nixos-hetzner]: Hetzner Cloud image building tools
   - `determinate`: Determinate Nix distribution from FlakeHub
   - `fh`: FlakeHub CLI from FlakeHub
 - Outputs:
@@ -236,12 +263,12 @@ push the changes.
 Use the `workflow_dispatch` event to manually trigger a deployment of a previous
 version.
 
-## Why FlakeHub?
+# Why FlakeHub?
 
 Applying fully evaluated NixOS closures via [FlakeHub] differs from typical
 deployments using Nix in several key ways:
 
-### Deployment speed
+*Deployment speed*
 
 - FlakeHub deployment: The NixOS configuration is evaluated and built ahead of
   time. As the closure is pre-built and cached, the deployment process is
@@ -249,7 +276,7 @@ deployments using Nix in several key ways:
 - Typical Nix deployment: The evaluation and build process happens during
   deployment, which can be time-consuming.
 
-### Resource utilization
+*Resource utilization*
 
 - FlakeHub deployment: Offloads the computationally intensive tasks of
   evaluation and building to a controlled environment (e.g., a CI/CD pipeline),
@@ -257,7 +284,7 @@ deployments using Nix in several key ways:
 - Typical Nix deployment: The target server must handle the evaluation and build
   process, which can be resource-intensive.
 
-### Scalability
+*Scalability*
 
 - FlakeHub deployment: The pre-built and cached nature allows for rapid instance
   provisioning, making it ideal for auto-scaling scenarios.
