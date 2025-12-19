@@ -138,6 +138,17 @@ following repository secrets:
 - `DEPLOY_SSH_PRIVATE_KEY`: The contents of the `deploy_key` file (private key)
 - `HETZNER_SERVER_IP`: The server IP from `tofu output server_ip`
 
+Using the `gh` CLI after completing [manual deployment](#manual-deployment):
+
+```shell
+# Create a production environment (optional)
+gh api repos/{owner}/{repo}/environments/production --method PUT
+
+# Set secrets
+cat deploy_key | gh secret set DEPLOY_SSH_PRIVATE_KEY
+tofu output -raw server_ip | gh secret set HETZNER_SERVER_IP
+```
+
 The workflow will automatically build, publish to FlakeHub, and deploy on pushes
 to main.
 
