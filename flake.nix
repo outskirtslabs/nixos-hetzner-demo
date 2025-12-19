@@ -91,6 +91,7 @@
                 };
               };
 
+              networking.hostName = "cryptpad-demo";
               system.stateVersion = "25.11";
             }
           )
