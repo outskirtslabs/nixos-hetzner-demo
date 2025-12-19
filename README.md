@@ -1,6 +1,7 @@
 # Continuous, rapid, NixOS deployments to Hetzner Cloud
 
-> [!NOTE] This repo was based on [Determinate Systems][detsys]'s [repo for AWS
+> [!NOTE]
+> This repo was based on [Determinate Systems][detsys]'s [repo for AWS
 > AMIs][detsys-demo]. This is a proof-of-concept repo maintained by me and not
 > DetSys. I use something like this in prod, so it works, but don't expect this
 > repo to be updated regularly.
@@ -58,7 +59,8 @@ You can trigger deployments in two ways:
 - [Automated deployment](#automated-deployment-with-github-actions) - Push to
   GitHub and let CI/CD handle it
 
-> [!TIP] For a full rundown of how everything in the demo works, see
+> [!TIP]
+> For a full rundown of how everything in the demo works, see
 > [How it works](#how-it-works) below.
 
 ### Manual deployment

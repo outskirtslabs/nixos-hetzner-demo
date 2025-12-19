@@ -4,8 +4,7 @@
     # TODO: switch this back to nixos/nixpkgs once https://github.com/NixOS/nixpkgs/pull/375551 is merged
     nixpkgs-mine.url = "git+https://github.com/ramblurr/nixpkgs?shallow=1&ref=consolidated";
 
-    flakelight.url = "github:nix-community/flakelight";
-    flakelight.inputs.nixpkgs.follows = "nixpkgs";
+    flakelight.url = "github:m15a/flakelight-treefmt";
 
     nixos-hetzner.url = "https://flakehub.com/f/outskirtslabs/nixos-hetzner/*";
     nixos-hetzner.inputs.nixpkgs.follows = "nixpkgs";
@@ -33,9 +32,9 @@
           jq
         ];
 
-      flakelight.builtinFormatters = false;
-      formatters = pkgs: {
-        "*.nix" = "${pkgs.nixfmt}/bin/nixfmt";
+      treefmtConfig = {
+        programs.nixfmt.enable = true;
+        programs.terraform.enable = true;
       };
 
       nixosConfigurations.cryptpad-demo = {
