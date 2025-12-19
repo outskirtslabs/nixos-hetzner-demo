@@ -33,6 +33,11 @@
           jq
         ];
 
+      flakelight.builtinFormatters = false;
+      formatters = pkgs: {
+        "*.nix" = "${pkgs.nixfmt}/bin/nixfmt";
+      };
+
       nixosConfigurations.cryptpad-demo = {
         system = "x86_64-linux";
         modules = [
@@ -70,13 +75,22 @@
                 settings = {
                   httpUnsafeOrigin = "http://localhost";
                   httpSafeOrigin = "http://localhost";
-                  httpAddress = "0.0.0.0";
-                  httpPort = 80;
+                  httpAddress = "127.0.0.1";
+                  httpPort = 3000;
                 };
               };
 
-              # cryptpad needs CAP_NET_BIND_SERVICE to bind to port 80
-              systemd.services.cryptpad.serviceConfig.AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
+              # Use nginx as reverse proxy for port 80
+              services.nginx = {
+                enable = true;
+                virtualHosts.default = {
+                  default = true;
+                  locations."/" = {
+                    proxyPass = "http://127.0.0.1:3000";
+                    proxyWebsockets = true;
+                  };
+                };
+              };
 
               system.stateVersion = "25.11";
             }
