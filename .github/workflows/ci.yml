@@ -17,7 +17,7 @@ jobs:
   build-publish:
     runs-on: ubuntu-latest
     outputs:
-      flakeref-exact: ${{ steps.flakehub-push.outputs.flakeref-exact }}
+      flakeref-exact: ${{ steps.flakehub-push.outputs.flakeref_exact }}
     permissions:
       id-token: write
       contents: read
