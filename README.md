@@ -52,12 +52,12 @@ deployment techniques.
 This demo deploys [CryptPad], a collaborative document editing platform, to a
 Hetzner Cloud server.
 
-You can trigger deployments in two ways:
+Deployment is a two-step process:
 
-- [Manual deployment](#manual-deployment) - Run OpenTofu commands from your
-  local machine
-- [Automated deployment](#automated-deployment-with-github-actions) - Push to
-  GitHub and let CI/CD handle it
+1. [Manual deployment](#manual-deployment) - Run OpenTofu locally to create the
+   server infrastructure (required first)
+2. [Automated deployment](#automated-deployment-with-github-actions) - Once the
+   server exists, push to GitHub for CI/CD deployments
 
 > [!TIP]
 > For a full rundown of how everything in the demo works, see
