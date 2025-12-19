@@ -38,13 +38,22 @@ Once you have a NixOS image uploaded to HCloud, it is straightforward to create 
 
 In this demo we use opentofu to provision the server, firewall, ssh key, etc.
 
-- The initial HCloud image upload takes 8-12 minutes
-- The initial deployment completes in less than XX seconds
-- Subsequent deployments take less than XX seconds
-
 The deployment process involves fetching a pre-built NixOS [closure][closures]
 from [FlakeHub] and applying it to the Hetzner Cloud server, streamlining the
 deployment process and ensuring consistency across deployments.
+
+
+Timings (YMMV):
+
+| Step                               | Time       |
+|------------------------------------|------------|
+| Image upload                       | ~9 minutes |
+| Initial tofu apply                 | ~4 minutes |
+| - Hetzner resources creation       | 3m5s       |
+| - FlakeHub nixos provisioning      | ~60s       |
+| Subsequent deploy (GitHub Actions) | ~3 minutes |
+| - Build + publish                  | 2m55s      |
+| - fh apply via SSH                 | 14s        |
 
 ## Sign-up for the FlakeHub beta
 
@@ -272,5 +281,5 @@ fixed, immutable artifact.
 [nixos]: https://zero-to-nix.com/concepts/nixos
 [nixos-hetzner]: https://github.com/outskirtslabs/nixos-hetzner
 [opentofu]: https://opentofu.org
-[det-nix]: https://docs.determinate.systems/determinate-nix
+[detnix]: https://docs.determinate.systems/determinate-nix
 [hcloud-upload-image]: https://github.com/apricote/hcloud-upload-image
