@@ -1,0 +1,7 @@
+---
+name: nixos-hetzner-demo
+title: nixos-hetzner-demo
+version: next
+prerelease: true
+nav:
+  - modules/ROOT/nav.adoc

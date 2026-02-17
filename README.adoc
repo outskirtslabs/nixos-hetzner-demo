@@ -1,0 +1,363 @@
+[NOTE]
+====
+This repo was based on https://determinate.systems[Determinate
+Systems]'s https://github.com/determinatesystems/demo[repo for AWS
+AMIs]. This is a proof-of-concept repo maintained by me and not DetSys.
+I use something like this in prod, so it works, but don't expect this
+repo to be updated regularly.
+====
+
+This project shows you how to continuously deploy a
+https://zero-to-nix.com/concepts/nixos[NixOS] configuration to a
+https://www.hetzner.com/cloud[Hetzner Cloud] server using
+https://opentofu.org[OpenTofu] and https://flakehub.com[FlakeHub] in
+seconds.
+
+== Differences from the AWS demo
+
+This repo is a port of the
+https://github.com/determinatesystems/demo[Determinate Systems AWS demo]
+to Hetzner Cloud. Key differences:
+
+[cols=",,",options="header",]
+|===
+|Aspect |AWS Demo |Hetzner Demo
+|Demo app |EtherCalc (removed from nixpkgs) |CryptPad
+
+|Base image |Pre-built AMIs from Determinate Systems |Custom image built
+from https://github.com/outskirtslabs/nixos-hetzner[nixos-hetzner] and
+uploaded
+
+|FlakeHub auth |IAM role (`determinate-nixd login aws`) |API token
+(`determinate-nixd login token`)
+
+|Deployment method |AWS Systems Manager (SSM) |SSH with deploy key
+
+|Networking |VPC, subnets, security groups |Simple firewall rules
+
+|GitHub auth |OIDC federation with AWS |SSH deploy key as secret
+|===
+
+The core FlakeHub workflow remains the same: build closures in CI,
+publish to FlakeHub Cache, and apply pre-built configurations in
+seconds.
+
+However there are a few caveats:
+
+Since Hetzner Cloud does not have a public marketplace for cloud images,
+you have to build the cloud image yourself (with the help of
+https://github.com/outskirtslabs/nixos-hetzner[nixos-hetzner]) and
+upload it. Hetzner Cloud API keys are scoped to a project, so you will
+need to upload the image on a per-project basis.
+
+We rely on the tool
+https://github.com/apricote/hcloud-upload-image[hcloud-upload-image] to
+perform the image creation. It can take awhile. In my experience
+uploading a 4GB image can take 8-12 minutes (assuming a fast pipe and
+bandwidth is not the bottleneck).
+
+If you build the image on a system using FlakeHub Cache, then the cloud
+image will be available to other systems from which you want to deploy
+(that are also using FlakeHub Cache).
+
+Once you have a NixOS image uploaded to HCloud, it is straightforward to
+create a nixos server from the snapshot. You can clickops at
+console.hetzner.com, use the hcloud cli tool, or use terraform/opentofu.
+
+In this demo we use opentofu to provision the server, firewall, ssh key,
+etc.
+
+The deployment process involves fetching a pre-built NixOS
+https://zero-to-nix.com/concepts/closures[closure] from
+https://flakehub.com[FlakeHub] and applying it to the Hetzner Cloud
+server, streamlining the deployment process and ensuring consistency
+across deployments.
+
+Timings (YMMV):
+
+[cols=",",options="header",]
+|===
+|Step |Time
+|Image upload |~9 minutes
+|Initial tofu apply |~4 minutes
+|- Hetzner resources creation |3m5s
+|- FlakeHub nixos provisioning |~60s
+|Subsequent deploy (GitHub Actions) |~3 minutes
+|- Build {plus} publish |2m55s
+|- fh apply via SSH |14s
+|===
+
+== Sign-up for the FlakeHub beta
+
+To experience this streamlined NixOS deployment pipeline for yourself,
+https://determinate.systems[sign up for the FlakeHub beta] at
+https://determinate.systems. FlakeHub provides the enterprise-grade Nix
+infrastructure needed to fully use these advanced deployment techniques.
+
+== Prerequisites
+
+* Paid https://www.hetzner.com/cloud[Hetzner Cloud account] with an API
+token
+* Paid https://flakehub.com[FlakeHub account] with an API token
+* https://docs.determinate.systems/determinate-nix[Detsys Nix] with
+flakes enabled
+* https://opentofu.org[OpenTofu] (available in the dev shell)
+
+== Getting Started
+
+This demo deploys https://cryptpad.net[CryptPad], a collaborative
+document editing platform, to a Hetzner Cloud server.
+
+Deployment is a two-step process:
+
+[arabic]
+. link:#manual-deployment[Manual deployment] - Run OpenTofu locally to
+create the server infrastructure (required first)
+. link:#automated-deployment-with-github-actions[Automated deployment] -
+Once the server exists, push to GitHub for CI/CD deployments
+
+[TIP]
+====
+For a full rundown of how everything in the demo works, see
+link:#how-it-works[How it works] below.
+====
+
+=== Manual deployment
+
+[[1-build-and-upload-the-base-image]]
+==== 1. Build and upload the base image
+
+First, build and upload a NixOS base image to Hetzner Cloud. This only
+needs to be done once (or when you want to update the base image).
+
+[source,shell]
+----
+# Enter the dev shell
+nix develop
+
+# Create .env file with your tokens (keeps them out of shell history)
+cat > .env << 'EOF'
+HCLOUD_TOKEN=your-hetzner-token
+FLAKEHUB_TOKEN=your-flakehub-token
+EOF
+chmod 600 .env
+
+# Load and export tokens, then build/upload the image
+set -a && source .env && set +a
+./scripts/upload-image.sh
+
+# Note the image ID from the output (e.g., 123456789)
+----
+
+[[2-generate-a-deploy-key]]
+==== 2. Generate a deploy key
+
+Generate an SSH key for GitHub Actions deployments:
+
+[source,shell]
+----
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f deploy_key -N ""
+----
+
+[[3-configure-opentofu]]
+==== 3. Configure OpenTofu
+
+[source,shell]
+----
+cd setup
+
+# Copy the example config
+cp terraform.tfvars.example terraform.tfvars
+
+# Edit terraform.tfvars with your values:
+# - hcloud_token: Your Hetzner Cloud API token
+# - hcloud_image_id: The image ID from step 1
+# - flakehub_token: Your FlakeHub API token
+# - deploy_ssh_public_key: Contents of deploy_key.pub
+# - deploy_ssh_private_key: Contents of deploy_key (private key, for first-boot provisioning)
+# - (optional) ssh_public_key: Your personal SSH key for manual access
+----
+
+[[4-create-the-infrastructure]]
+==== 4. Create the infrastructure
+
+[source,shell]
+----
+# Initialize OpenTofu
+tofu init
+
+# Validate the configuration
+tofu validate
+
+# Create the resources
+tofu apply -auto-approve
+
+# Get the website URL
+export CRYPTPAD_URL=$(tofu output --json | jq -r .website.value)
+
+# Open the website (wait ~60 seconds for first deployment)
+open "${CRYPTPAD_URL}"
+
+# (optional) When you're done, destroy the resources
+tofu destroy -auto-approve
+----
+
+=== Automated deployment with GitHub Actions
+
+Once the server exists, GitHub Actions can automatically deploy NixOS
+configuration changes. Configure the following repository secrets:
+
+[cols=",",options="header",]
+|===
+|Secret |Description
+|`DEPLOY++_++SSH++_++PRIVATE++_++KEY` |The contents of the
+`deploy++_++key` file (private key)
+
+|`HETZNER++_++SERVER++_++IP` |The server IP from
+`tofu output server++_++ip`
+|===
+
+Using the `gh` CLI after completing link:#manual-deployment[manual
+deployment]:
+
+[source,shell]
+----
+# Create a production environment (optional)
+gh api repos/{owner}/{repo}/environments/production --method PUT
+
+# Set secrets
+cat deploy_key | gh secret set DEPLOY_SSH_PRIVATE_KEY
+tofu output -raw server_ip | gh secret set HETZNER_SERVER_IP
+----
+
+The workflow will automatically build, publish to FlakeHub, and deploy
+on pushes to main.
+
+== How it works
+
+Here's a high level walkthrough of what's going on
+
+Initial setup (one-time)
+
+[arabic]
+. Build NixOS base image locally using
+https://github.com/outskirtslabs/nixos-hetzner[nixos-hetzner]
+. Upload image to Hetzner Cloud via hcloud-upload-image
+. Generate SSH deploy key for GitHub Actions
+. Configure terraform.tfvars with tokens, image ID, and keys
+
+First deployment (tofu apply)
+
+[arabic]
+. OpenTofu creates Hetzner resources (SSH key, firewall, server)
+. Server boots with base NixOS image (includes determinate-nixd and fh)
+. Provisioner SSHs into server
+. Authenticates with FlakeHub using `determinate-nixd login token`
+. Runs `fh apply nixos ++<++flakeref++>++` to pull config from FlakeHub
+. Server downloads pre-built closure and switches to new configuration
+
+Subsequent deployments (via GitHub Actions)
+
+[arabic]
+. Developer pushes changes to flake.nix
+. CI builds the NixOS closure
+. flakehub-push publishes closure to FlakeHub (with output paths cached)
+. Deploy job SSHs to server with the exact flakeref
+. Server runs `fh apply nixos` - downloads closure from FlakeHub Cache
+. Configuration applied in seconds (no building on server)
+
+=== Nix flake
+
+The link:./flake.nix[`flake.nix`] defines the NixOS configuration for
+the demo system:
+
+* Inputs:
+** `nixpkgs`: Custom nixpkgs fork with Hetzner Cloud tools (can be
+reverted to upstream nixpkgs once
+https://github.com/NixOS/nixpkgs/pull/375551[PR #375551] is merged
+** https://github.com/outskirtslabs/nixos-hetzner[`nixos-hetzner`]:
+Hetzner Cloud image building tools
+** `determinate`: Determinate Nix distribution from FlakeHub
+** `fh`: FlakeHub CLI from FlakeHub
+* Outputs:
+** `nixosConfigurations.cryptpad-demo`: The CryptPad server
+configuration
+** `devShells.default`: Development environment with required tools
+
+=== OpenTofu configuration
+
+The link:./setup/[`setup/`] directory contains OpenTofu configuration
+for Hetzner Cloud:
+
+* `providers.tf`: Hetzner Cloud provider configuration
+* `variables.tf`: Input variables (API tokens, image ID, SSH keys, etc.)
+* `main.tf`: Server, firewall, and SSH key resources
+* `outputs.tf`: Server IP and website URL
+
+After server creation, Terraform provisions the server via SSH:
+
+[arabic]
+. Authenticates with FlakeHub using `determinate-nixd login token`
+. Applies the NixOS configuration using `fh apply nixos`
+
+=== GitHub Actions workflow
+
+The link:./.github/workflows/ci.yml[`.github/workflows/ci.yml`]
+workflow:
+
+[arabic]
+. Build job: Builds the NixOS closure and publishes to FlakeHub
+. Deploy job: SSHs to the server and runs `fh apply nixos` with the new
+closure
+
+=== Continuous deployment
+
+Continuous deployments work by:
+
+[arabic]
+. Pushing changes to the `flake.nix`
+. GitHub Actions builds the new closure
+. The closure is published to FlakeHub Cache
+. The deploy job SSHs to the server and applies the new configuration
+
+To demonstrate, make a change to the CryptPad configuration in
+`flake.nix` and push the changes.
+
+=== Triggering rollbacks
+
+Use the `workflow++_++dispatch` event to manually trigger a deployment
+of a previous version.
+
+Why FlakeHub?
+
+Applying fully evaluated NixOS closures via
+https://flakehub.com[FlakeHub] differs from typical deployments using
+Nix in several key ways:
+
+_Deployment speed_
+
+* FlakeHub deployment: The NixOS configuration is evaluated and built
+ahead of time. As the closure is pre-built and cached, the deployment
+process is faster. The server only needs to download and apply the
+pre-built closure.
+* Typical Nix deployment: The evaluation and build process happens
+during deployment, which can be time-consuming.
+
+_Resource utilization_
+
+* FlakeHub deployment: Offloads the computationally intensive tasks of
+evaluation and building to a controlled environment (e.g., a CI/CD
+pipeline), freeing up resources on the target server.
+* Typical Nix deployment: The target server must handle the evaluation
+and build process, which can be resource-intensive.
+
+_Scalability_
+
+* FlakeHub deployment: The pre-built and cached nature allows for rapid
+instance provisioning, making it ideal for auto-scaling scenarios.
+* Typical Nix deployment: The time required for evaluation and building
+on each new instance can introduce significant delays.
+
+In summary, applying a fully evaluated NixOS closure from
+https://flakehub.com[FlakeHub] ensures that the exact same configuration
+is deployed every time, as the closure is a fixed, immutable artifact.

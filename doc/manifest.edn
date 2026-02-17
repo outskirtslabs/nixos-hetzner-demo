@@ -1,0 +1,18 @@
+{:manifest/version 1,
+ :project
+ {:id "nixos-hetzner-demo",
+  :coord "outskirtslabs/nixos-hetzner-demo",
+  :description
+  "Continuous, rapid NixOS deployments to Hetzner Cloud with FlakeHub and OpenTofu",
+  :license "NOASSERTION",
+  :platforms [:nix :linux],
+  :status :static,
+  :created "2025-12-18",
+  :version "0.0.0"},
+ :docs
+ {:component "nixos-hetzner-demo",
+  :title "nixos-hetzner-demo",
+  :version "next",
+  :prerelease true,
+  :start-path "doc"},
+ :repo {:url "https://github.com/outskirtslabs/nixos-hetzner-demo"}}
