@@ -1,3 +1,4 @@
+= Continuous, rapid, NixOS deployments to Hetzner Cloud
 ____
 Continuous, rapid NixOS deployments to Hetzner Cloud with FlakeHub and
 OpenTofu.
