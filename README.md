@@ -1,5 +1,10 @@
 # Continuous, rapid, NixOS deployments to Hetzner Cloud
 
+> Continuous, rapid NixOS deployments to Hetzner Cloud with FlakeHub and OpenTofu.
+
+[![doc](https://img.shields.io/badge/doc-outskirtslabs-orange.svg)](http://docs.outskirtslabs.com/nixos-hetzner-demo/next/)
+[![status: static](https://img.shields.io/badge/status-static-blue.svg)](http://docs.outskirtslabs.com/open-source-vital-signs#static)
+
 > [!NOTE]
 > This repo was based on [Determinate Systems][detsys]'s [repo for AWS
 > AMIs][detsys-demo]. This is a proof-of-concept repo maintained by me and not
@@ -68,6 +73,8 @@ deployment techniques.
 - Paid [FlakeHub account][flakehub] with an API token
 - [Detsys Nix][detnix] with flakes enabled
 - [OpenTofu] (available in the dev shell)
+
+Project status: **[Static](http://docs.outskirtslabs.com/open-source-vital-signs#static)**.
 
 ## Getting Started
 
@@ -180,6 +187,12 @@ tofu output -raw server_ip | gh secret set HETZNER_SERVER_IP
 
 The workflow will automatically build, publish to FlakeHub, and deploy on pushes
 to main.
+
+## Documentation
+
+- [Docs](http://docs.outskirtslabs.com/nixos-hetzner-demo/next/)
+- [API Reference](http://docs.outskirtslabs.com/nixos-hetzner-demo/next/api)
+- [Support via GitHub Issues](https://github.com/outskirtslabs/nixos-hetzner-demo/issues)
 
 ## How it works
 
