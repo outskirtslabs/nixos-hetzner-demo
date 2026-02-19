@@ -4,8 +4,8 @@ Continuous, rapid NixOS deployments to Hetzner Cloud with FlakeHub and
 OpenTofu.
 ____
 
-http://docs.outskirtslabs.com/nixos-hetzner-demo/next/[image:https://img.shields.io/badge/doc-outskirtslabs-orange.svg[doc]]
-http://docs.outskirtslabs.com/open-source-vital-signs#static[image:https://img.shields.io/badge/status-static-blue.svg[status:
+https://docs.outskirtslabs.com/nixos-hetzner-demo/next/[image:https://img.shields.io/badge/doc-outskirtslabs-orange.svg[doc]]
+https://docs.outskirtslabs.com/open-source-vital-signs#static[image:https://img.shields.io/badge/status-static-blue.svg[status:
 static]]
 
 [NOTE]
@@ -114,7 +114,7 @@ flakes enabled
 * https://opentofu.org[OpenTofu] (available in the dev shell)
 
 Project status:
-*http://docs.outskirtslabs.com/open-source-vital-signs#static[Static]*.
+*https://docs.outskirtslabs.com/open-source-vital-signs#static[Static]*.
 
 == Getting Started
 
@@ -248,8 +248,8 @@ on pushes to main.
 
 == Documentation
 
-* http://docs.outskirtslabs.com/nixos-hetzner-demo/next/[Docs]
-* http://docs.outskirtslabs.com/nixos-hetzner-demo/next/api[API
+* https://docs.outskirtslabs.com/nixos-hetzner-demo/next/[Docs]
+* https://docs.outskirtslabs.com/nixos-hetzner-demo/next/api[API
 Reference]
 * https://github.com/outskirtslabs/nixos-hetzner-demo/issues[Support via
 GitHub Issues]
