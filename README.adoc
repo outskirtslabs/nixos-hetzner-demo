@@ -7,6 +7,7 @@ ____
 https://docs.outskirtslabs.com/nixos-hetzner-demo/next/[image:https://img.shields.io/badge/doc-outskirtslabs-orange.svg[doc]]
 https://docs.outskirtslabs.com/open-source-vital-signs#static[image:https://img.shields.io/badge/status-static-blue.svg[status:
 static]]
+image:https://ci.outskirtslabs.com/repos/github/outskirtslabs/nixos-hetzner-demo/badge.svg[alt=nixbot,link=https://ci.outskirtslabs.com/repos/github/outskirtslabs/nixos-hetzner-demo]
 
 [NOTE]
 ====
